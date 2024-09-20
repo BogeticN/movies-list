@@ -1,9 +1,8 @@
+import React from 'react';
+import MovieList from './pages/MoviesList';
+
 function App() {
-  return (
-    <div>
-      <span>Test</span>
-    </div>
-  );
+  return <MovieList></MovieList>;
 }
 
 export default App;
