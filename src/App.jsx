@@ -6,7 +6,7 @@ function App() {
   return (
     <>
       <GlobalStyle></GlobalStyle>
-      <MovieList></MovieList>;
+      <MovieList></MovieList>
     </>
   );
 }

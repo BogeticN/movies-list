@@ -4,26 +4,43 @@ import Movie from '../components/Movie/Movie';
 import styled from 'styled-components';
 import { processMoviesData } from '../utils/moviesDataFormatter';
 import { getNewMovieIndex } from '../utils/keyboardNavigation';
+import throttle from 'lodash/throttle';
+import LoadingSpinner from '../components/LoadingSpinner/LoadingSpinner';
+import { COLORS } from '../constants/colors';
 
 const MovieList = () => {
   const [moviesList, setMoviesList] = useState([]);
   const [selectedMovieId, setSelectedMovieId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const movieRefs = useRef({});
 
   useEffect(() => {
     const uniqueMovies = processMoviesData(JSON.parse(JSON.stringify(movies)));
     setMoviesList(uniqueMovies);
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
     if (selectedMovieId && movieRefs.current[selectedMovieId]) {
       movieRefs.current[selectedMovieId].scrollIntoView({
-        behavior: 'smooth',
         block: 'center',
         inline: 'center'
       });
     }
   }, [selectedMovieId]);
+
+  const handleArrowKeyPress = useCallback(
+    throttle((e) => {
+      setSelectedMovieId((prevId) => {
+        const currentIndex = moviesList.findIndex(
+          (movie) => movie.id === prevId
+        );
+        const newIndex = getNewMovieIndex(e, currentIndex, moviesList);
+        return moviesList[newIndex]?.id || null;
+      });
+    }, 130),
+    [moviesList]
+  );
 
   useEffect(() => {
     const handleKeyPressWrapper = (e) => {
@@ -33,40 +50,36 @@ const MovieList = () => {
     window.addEventListener('keydown', handleKeyPressWrapper);
     return () => {
       window.removeEventListener('keydown', handleKeyPressWrapper);
+      handleArrowKeyPress.cancel();
     };
-  }, [moviesList]);
+  }, [handleArrowKeyPress]);
 
   const handleOnClickSelectedMovie = (id) => {
     setSelectedMovieId(id);
   };
 
-  const handleArrowKeyPress = useCallback(
-    (e) => {
-      setSelectedMovieId((prevId) => {
-        const currentIndex = moviesList.findIndex(
-          (movie) => movie.id === prevId
-        );
-        const newIndex = getNewMovieIndex(e, currentIndex, moviesList);
-        return moviesList[newIndex]?.id || null;
-      });
-    },
-    [moviesList]
-  );
-
   return (
-    <StyledContainer>
-      <StyledGridContainer>
-        {moviesList.map((movie) => (
-          <MemoizedMovie
-            key={movie.id}
-            movie={movie}
-            isSelected={selectedMovieId === movie.id}
-            onSelectMovie={() => handleOnClickSelectedMovie(movie.id)}
-            ref={(el) => (movieRefs.current[movie.id] = el)}
-          />
-        ))}
-      </StyledGridContainer>
-    </StyledContainer>
+    <>
+      {isLoading ? (
+        <StyledLoadingSpinnerContainer>
+          <LoadingSpinner />
+        </StyledLoadingSpinnerContainer>
+      ) : (
+        <StyledContainer>
+          <StyledGridContainer>
+            {moviesList.map((movie) => (
+              <MemoizedMovie
+                key={movie.id}
+                movie={movie}
+                isSelected={selectedMovieId === movie.id}
+                onSelectMovie={() => handleOnClickSelectedMovie(movie.id)}
+                ref={(el) => (movieRefs.current[movie.id] = el)}
+              />
+            ))}
+          </StyledGridContainer>
+        </StyledContainer>
+      )}
+    </>
   );
 };
 
@@ -88,5 +101,10 @@ const StyledGridContainer = styled.div`
 `;
 
 const StyledContainer = styled.div`
-  background-color: #e9e9e9;
+  background-color: ${COLORS.BACKGROUND_GREY};
+`;
+
+const StyledLoadingSpinnerContainer = styled.div`
+  background-color: ${COLORS.BACKGROUND_GREY};
+  height: 100vh;
 `;

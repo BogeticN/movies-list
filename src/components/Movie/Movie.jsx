@@ -4,11 +4,14 @@ import styled from 'styled-components';
 import { ReactComponent as StarIcon } from '../../assets/icons/staricon.svg';
 import { ReactComponent as OutlinedStarIcon } from '../../assets/icons/outlinedstaricon.svg';
 import { updateLocalStorage } from '../../utils/localStorageUpdate';
+import LoadingSpinner from '../LoadingSpinner/LoadingSpinner';
+import { COLORS } from '../../constants/colors';
 
 const BASE_URL = 'https://image.tmdb.org/t/p/w500';
 
 const Movie = React.forwardRef(({ movie, onSelectMovie, isSelected }, ref) => {
   const [isFavorite, setIsFavorite] = useState(movie.isFavorite || false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (isSelected) {
@@ -36,6 +39,10 @@ const Movie = React.forwardRef(({ movie, onSelectMovie, isSelected }, ref) => {
     }
   };
 
+  const handleImageLoad = () => {
+    setIsLoading(false);
+  };
+
   return (
     <StyledGridItem
       ref={ref}
@@ -43,10 +50,13 @@ const Movie = React.forwardRef(({ movie, onSelectMovie, isSelected }, ref) => {
       onClick={() => onSelectMovie(movie.id)}
     >
       <StyledMoviePosterContainer>
+        {isLoading && <LoadingSpinner />}
         <StyledMoviePosterImg
           src={`${BASE_URL}${movie.poster_path}`}
           alt={`${movie.title} poster`}
           loading="lazy"
+          onLoad={handleImageLoad}
+          data-isloading={isLoading}
         />
       </StyledMoviePosterContainer>
 
@@ -72,7 +82,7 @@ Movie.displayName = 'Movie';
 export default Movie;
 
 const StyledGridItem = styled.div`
-  background-color: #f9f9f9;
+  background-color: ${COLORS.BACKGROUND_WHITE};
   border-radius: 5px;
   display: flex;
   flex-direction: column;
@@ -96,6 +106,7 @@ const StyledMoviePosterImg = styled.img`
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: ${(props) => (props['data-isloading'] ? 'none' : 'block')};
 `;
 
 const StyledMovieInfoContainer = styled.div`
@@ -107,16 +118,18 @@ const StyledMovieInfoContainer = styled.div`
   gap: 15px;
 
   background-color: ${(props) =>
-    props['data-isselected'] ? '#5992d2' : 'transparent'};
-  color: ${(props) => (props['data-isselected'] ? '#ffffff' : '#000000')};
+    props['data-isselected'] ? `${COLORS.BACKGROUND_BLUE}` : 'transparent'};
+  color: ${(props) =>
+    props['data-isselected'] ? `${COLORS.ICON_BLACK}` : `${COLORS.ICON_WHITE}`};
 `;
 
-const StyledMovieTitle = styled.strong`
+const StyledMovieTitle = styled.h3`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   text-transform: ${(props) =>
     props['data-isselected'] ? 'uppercase' : 'none'};
+  margin: 0;
 `;
 
 const StyledIconContainer = styled.div`
