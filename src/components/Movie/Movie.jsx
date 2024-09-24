@@ -1,30 +1,52 @@
 /* eslint-disable react/prop-types */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { ReactComponent as StarIcon } from '../../assets/icons/staricon.svg';
 import { ReactComponent as OutlinedStarIcon } from '../../assets/icons/outlinedstaricon.svg';
+import { updateLocalStorage } from '../../utils/localStorageUpdate';
 
 const BASE_URL = 'https://image.tmdb.org/t/p/w500';
 
-const Movie = ({ movie, onSelectMovie, isSelected }) => {
-  const [isFavorite, setIsFavorite] = useState(movie.isFavorite);
+const Movie = React.forwardRef(({ movie, onSelectMovie, isSelected }, ref) => {
+  const [isFavorite, setIsFavorite] = useState(movie.isFavorite || false);
+
+  useEffect(() => {
+    if (isSelected) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      if (isSelected) {
+        window.removeEventListener('keydown', handleKeyDown);
+      }
+    };
+  }, [isSelected]);
 
   const toggleIsFavorite = (e) => {
     e.stopPropagation();
-    const newFavoriteState = !isFavorite;
-    setIsFavorite(newFavoriteState);
-    movie.isFavorite = newFavoriteState;
+    setIsFavorite((prev) => {
+      const newFavoriteState = !prev;
+      updateLocalStorage(newFavoriteState, movie);
+      return newFavoriteState;
+    });
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && isSelected) {
+      toggleIsFavorite(e);
+    }
   };
 
   return (
     <StyledGridItem
+      ref={ref}
       data-isselected={isSelected}
       onClick={() => onSelectMovie(movie.id)}
     >
       <StyledMoviePosterContainer>
         <StyledMoviePosterImg
-          src={BASE_URL + movie.poster_path}
-          alt="Movie poster"
+          src={`${BASE_URL}${movie.poster_path}`}
+          alt={`${movie.title} poster`}
+          loading="lazy"
         />
       </StyledMoviePosterContainer>
 
@@ -35,17 +57,17 @@ const Movie = ({ movie, onSelectMovie, isSelected }) => {
         <StyledIconContainer>
           <span>{movie.release_date}</span>
           {isFavorite ? (
-            <StarIcon onClick={(e) => toggleIsFavorite(e)}></StarIcon>
+            <StarIcon onClick={toggleIsFavorite} />
           ) : (
-            <OutlinedStarIcon
-              onClick={(e) => toggleIsFavorite(e)}
-            ></OutlinedStarIcon>
+            <OutlinedStarIcon onClick={toggleIsFavorite} />
           )}
         </StyledIconContainer>
       </StyledMovieInfoContainer>
     </StyledGridItem>
   );
-};
+});
+
+Movie.displayName = 'Movie';
 
 export default Movie;
 
@@ -84,7 +106,8 @@ const StyledMovieInfoContainer = styled.div`
   height: 100%;
   gap: 15px;
 
-  background-color: ${(props) => (props['data-isselected'] ? '#5992d2' : '')};
+  background-color: ${(props) =>
+    props['data-isselected'] ? '#5992d2' : 'transparent'};
   color: ${(props) => (props['data-isselected'] ? '#ffffff' : '#000000')};
 `;
 

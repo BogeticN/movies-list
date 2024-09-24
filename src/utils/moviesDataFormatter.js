@@ -1,20 +1,40 @@
 export const processMoviesData = (movies) => {
   let movieMap = new Map();
 
-  for (let i = 0; i < movies.length; i++) {
-    movies[i].isFavorite = false;
+  const favoriteMovies =
+    JSON.parse(localStorage.getItem('favoriteMovies')) || [];
 
-    if (!isNaN(new Date(movies[i].release_date).getTime())) {
-      movies[i].release_date = new Date(movies[i].release_date)
-        .toLocaleDateString('en-GB')
-        .replace(/\//g, '.');
-    } else {
-      movies[i].release_date = 'N/A';
-    }
+  for (let i = 0; i < movies.length; i++) {
+    movies[i].isFavorite = favoriteMovies.includes(movies[i].id);
+
+    movies[i].release_date = formatReleaseDate(movies[i]);
 
     movieMap.set(movies[i].id, movies[i]);
   }
-  return [...movieMap.values()].sort(
-    (a, b) => b.ratings[0].rating - a.ratings[0].rating
-  );
+
+  const sortedMovies = sortByRating([...movieMap.values()]);
+
+  return sortedMovies;
+};
+
+const formatReleaseDate = (movie) => {
+  if (!isNaN(new Date(movie.release_date).getTime())) {
+    return new Date(movie.release_date)
+      .toLocaleDateString('en-GB')
+      .replace(/\//g, '.');
+  } else {
+    return 'N/A';
+  }
+};
+
+const sortByRating = (movies) => {
+  return movies.sort((a, b) => {
+    const imdbRatingA = a.ratings.find((rating) => rating.id === 'imdb');
+    const imdbRatingB = b.ratings.find((rating) => rating.id === 'imdb');
+
+    const ratingA = imdbRatingA ? imdbRatingA.rating : 0;
+    const ratingB = imdbRatingB ? imdbRatingB.rating : 0;
+
+    return ratingB - ratingA;
+  });
 };

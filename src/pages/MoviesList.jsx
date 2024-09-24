@@ -1,39 +1,76 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import movies from '../api/movies.json';
 import Movie from '../components/Movie/Movie';
 import styled from 'styled-components';
 import { processMoviesData } from '../utils/moviesDataFormatter';
+import { getNewMovieIndex } from '../utils/keyboardNavigation';
 
 const MovieList = () => {
   const [moviesList, setMoviesList] = useState([]);
   const [selectedMovieId, setSelectedMovieId] = useState(null);
+  const movieRefs = useRef({});
 
   useEffect(() => {
     const uniqueMovies = processMoviesData(JSON.parse(JSON.stringify(movies)));
     setMoviesList(uniqueMovies);
   }, []);
 
-  const handleSelectMovie = (id) => {
+  useEffect(() => {
+    if (selectedMovieId && movieRefs.current[selectedMovieId]) {
+      movieRefs.current[selectedMovieId].scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'center'
+      });
+    }
+  }, [selectedMovieId]);
+
+  useEffect(() => {
+    const handleKeyPressWrapper = (e) => {
+      handleArrowKeyPress(e);
+    };
+
+    window.addEventListener('keydown', handleKeyPressWrapper);
+    return () => {
+      window.removeEventListener('keydown', handleKeyPressWrapper);
+    };
+  }, [moviesList]);
+
+  const handleOnClickSelectedMovie = (id) => {
     setSelectedMovieId(id);
   };
+
+  const handleArrowKeyPress = useCallback(
+    (e) => {
+      setSelectedMovieId((prevId) => {
+        const currentIndex = moviesList.findIndex(
+          (movie) => movie.id === prevId
+        );
+        const newIndex = getNewMovieIndex(e, currentIndex, moviesList);
+        return moviesList[newIndex]?.id || null;
+      });
+    },
+    [moviesList]
+  );
 
   return (
     <StyledContainer>
       <StyledGridContainer>
-        {moviesList.map((movie) => {
-          return (
-            <Movie
-              key={movie.id}
-              movie={movie}
-              isSelected={selectedMovieId === movie.id}
-              onSelectMovie={() => handleSelectMovie(movie.id)}
-            ></Movie>
-          );
-        })}
+        {moviesList.map((movie) => (
+          <MemoizedMovie
+            key={movie.id}
+            movie={movie}
+            isSelected={selectedMovieId === movie.id}
+            onSelectMovie={() => handleOnClickSelectedMovie(movie.id)}
+            ref={(el) => (movieRefs.current[movie.id] = el)}
+          />
+        ))}
       </StyledGridContainer>
     </StyledContainer>
   );
 };
+
+const MemoizedMovie = React.memo(Movie);
 
 export default MovieList;
 
