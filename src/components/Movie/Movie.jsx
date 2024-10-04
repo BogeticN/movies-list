@@ -24,6 +24,12 @@ const Movie = React.forwardRef(({ movie, onSelectMovie, isSelected }, ref) => {
     };
   }, [isSelected]);
 
+  useEffect(() => {
+    if (movie) {
+      setIsLoading(false);
+    }
+  }, [movie]);
+
   const toggleIsFavorite = (e) => {
     e.stopPropagation();
     setIsFavorite((prev) => {
@@ -39,10 +45,6 @@ const Movie = React.forwardRef(({ movie, onSelectMovie, isSelected }, ref) => {
     }
   };
 
-  const handleImageLoad = () => {
-    setIsLoading(false);
-  };
-
   return (
     <StyledGridItem
       ref={ref}
@@ -50,14 +52,20 @@ const Movie = React.forwardRef(({ movie, onSelectMovie, isSelected }, ref) => {
       onClick={() => onSelectMovie(movie.id)}
     >
       <StyledMoviePosterContainer>
-        {isLoading && <LoadingSpinner />}
-        <StyledMoviePosterImg
-          src={`${BASE_URL}${movie.poster_path}`}
-          alt={`${movie.title} poster`}
-          loading="lazy"
-          onLoad={handleImageLoad}
-          data-isloading={isLoading}
-        />
+        {isLoading ? (
+          <LoadingSpinner />
+        ) : movie.poster_path ? (
+          <StyledMoviePosterImg
+            src={`${BASE_URL}${movie.poster_path}`}
+            alt={`${movie.title} poster`}
+            data-isloading={isLoading}
+            loading="lazy"
+          />
+        ) : (
+          <StyledMoviePosterImgFallback>
+            <span>N/A</span>
+          </StyledMoviePosterImgFallback>
+        )}
       </StyledMoviePosterContainer>
 
       <StyledMovieInfoContainer data-isselected={isSelected}>
@@ -140,4 +148,11 @@ const StyledIconContainer = styled.div`
   svg {
     cursor: pointer;
   }
+`;
+
+const StyledMoviePosterImgFallback = styled.div`
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
